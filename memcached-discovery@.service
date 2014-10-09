@@ -1,0 +1,41 @@
+[Unit]
+Description=Announce memcached
+
+# Service requirements
+Requires=docker.service
+Requires=etcd.service
+
+# Dependency ordering and binding
+After=docker.service
+After=etcd.service
+BindsTo=memcached@%i.service
+
+[Service]
+# Let processes take awhile to start up (for first run Docker containers)
+TimeoutStartSec=0
+
+# Change killmode from "control-group" to "none" to let Docker remove
+# work correctly.
+KillMode=none
+
+# Get CoreOS environmental variables
+EnvironmentFile=/etc/environment
+
+# Pre-start and Start
+
+## Directives with "=-" are allowed to fail without consequence
+ExecStartPre=-/usr/bin/docker kill memcached-discovery-%i
+ExecStartPre=-/usr/bin/docker rm memcached-discovery-%i
+
+# we should really make sure we can connect to the memcache instance
+ExecStart=/bin/sh -c "while true; do /usr/bin/etcdctl set /services/memcached/memcached-%i '{ \"host\": \"%H\", \"port\": 1121%i }' --ttl 60;sleep 45;done"
+
+# Stop
+ExecStop=/usr/bin/etcdctl rm /services/memcached/memcached-%i
+
+[X-Fleet]
+# Don't run more than one of me per host
+Conflicts=memcached-discovery@*.service
+
+# Schedule on the same machine as the associated memcached service
+MachineOf=memcached@%i.service

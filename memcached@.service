@@ -1,0 +1,36 @@
+[Unit]
+Description=memcached
+
+# Service requirements
+Requires=docker.service
+
+# Dependency ordering
+After=docker.service
+
+[Service]
+# Let processes take awhile to start up (for first run Docker containers)
+TimeoutStartSec=0
+
+# Change killmode from "control-group" to "none" to let Docker remove
+# work correctly.
+KillMode=none
+
+# Get CoreOS environmental variables
+EnvironmentFile=/etc/environment
+
+# Pre-start and Start
+
+## Directives with "=-" are allowed to fail without consequence
+ExecStartPre=-/usr/bin/docker kill memcached-%i
+ExecStartPre=-/usr/bin/docker rm memcached-%i
+ExecStartPre=/usr/bin/docker pull sylvainlasnier/memcached
+
+# You can tune the memory and connection ceilings using environment variables. See https://github.com/SylvainLasnier/memcached/blob/master/README.md
+ExecStart=/usr/bin/docker run --rm --name memcached-%i -p 11211:11211 sylvainlasnier/memcached
+
+# Stop
+ExecStop=/usr/bin/docker stop memcached-%i
+
+[X-Fleet]
+# Don't schedule on the same machine as other instances. Using both syntax versions
+Conflicts=memcached@*.service
