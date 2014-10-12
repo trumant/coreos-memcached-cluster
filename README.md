@@ -4,7 +4,8 @@ I've used AWS ElastiCache for memcached services before and wanted to play
 around with CoreOS and see if I could achieve roughly the same clustering using
 fleetctl and similar service discovery capabilities for applications using etcd.
 
-Currently, this repo provides a Vagrantfile to create a 3 node CoreOS cluster.
+This repo provides a Vagrantfile to create a 3 node CoreOS cluster, with each node
+running memcached and publishing memcached connection details to etcd at /services/memcached/.
 
 ## Getting started
 
