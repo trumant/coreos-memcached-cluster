@@ -100,6 +100,13 @@ template do
     :EnableDnsHostnames => false
   }
 
+  resource 'CoreOSInternetGateway', :Type => 'AWS::EC2::InternetGateway', :Properties => {}
+
+  resource 'CoreOSInternetGatewayAttachment', :Type => 'AWS::EC2::VPCGatewayAttachment', :DependsOn => ['CoreOSVPC', 'CoreOSInternetGateway'], :Properties => {
+    :InternetGatewayId => ref('CoreOSInternetGateway'),
+    :VpcId => ref('CoreOSVPC')
+  }
+
   resource 'PublicSubnetA', :Type => 'AWS::EC2::Subnet', :DependsOn => 'CoreOSVPC', :Properties => {
     :VpcId => ref('CoreOSVPC'),
     :AvailabilityZone => join("", aws_region, "a"),
@@ -216,7 +223,8 @@ template do
           ChallengeResponseAuthentication no
   )
 
-  resource 'CoreOSServerLaunchConfig', :Type => 'AWS::AutoScaling::LaunchConfiguration', :Properties => {
+  resource 'CoreOSServerLaunchConfig', :Type => 'AWS::AutoScaling::LaunchConfiguration', :DependsOn => 'CoreOSInternetGatewayAttachment', :Properties => {
+      :AssociatePublicIpAddress => true,
       :ImageId => find_in_map('RegionMap', aws_region, 'AMI'),
       :InstanceType => ref('InstanceType'),
       :KeyName => ref('KeyPair'),
